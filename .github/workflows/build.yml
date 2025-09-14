@@ -1,4 +1,5 @@
 name: Build Signed APK (MCGG-Xbot)
+
 on:
   push:
     branches: [ main ]
@@ -65,15 +66,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install buildozer==1.5.0 cython==0.29.36
 
-      - name: Decode keystore from secret (optional)
-        if: secrets.KEYSTORE_BASE64 != ''
+      - name: Decode keystore (if secret exists)
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > mcgg-release-key.jks
-          chmod 600 mcgg-release-key.jks
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > mcgg-release-key.jks
+            chmod 600 mcgg-release-key.jks
+            echo "✅ Keystore decoded"
+          else
+            echo "⚠️ No keystore secret found, will build debug APK"
+          fi
 
-      - name: Build signed release APK
+      - name: Build APK
         env:
-          # signing info from repo secrets (if present)
           P4A_RELEASE_KEYSTORE: ${{ github.workspace }}/mcgg-release-key.jks
           P4A_RELEASE_KEYSTORE_PASSWD: ${{ secrets.KEYSTORE_PASSWORD }}
           P4A_RELEASE_KEYALIAS: ${{ secrets.KEY_ALIAS }}
@@ -87,10 +91,11 @@ jobs:
           echo "Debug -> aidl: $(which aidl || echo 'not found')"
           ls -la "$ANDROID_SDK_ROOT/build-tools" || true
 
-          # build (release); if you don't have keystore, use `android debug`
           if [ -f mcgg-release-key.jks ]; then
+            echo "🔑 Building signed release APK..."
             buildozer -v android release
           else
+            echo "🐞 Building debug APK..."
             buildozer -v android debug
           fi
 
