@@ -1,0 +1,13 @@
+<MainScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        Label:
+            text: 'MCGG-Xbot'
+            size_hint_y: None
+            height: '48dp'
+        Button:
+            text: 'Login Screen (open console log)'
+            on_release: app.go_login()
+        Button:
+            text: 'Start dummy match'
+            on_release: app.demo_start()
