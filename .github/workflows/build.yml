@@ -1,5 +1,4 @@
 name: Build Signed APK (MCGG-Xbot)
-
 on:
   push:
     branches: [ main ]
