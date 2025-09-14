@@ -44,14 +44,12 @@ jobs:
           fi
           rm -rf $TMPZIP cmdline-tools-tmp || true
 
-          # Install required SDK components and accept licenses
           yes | ./cmdline-tools/latest/bin/sdkmanager --sdk_root="$SDK_ROOT" --licenses || true
           ./cmdline-tools/latest/bin/sdkmanager --sdk_root="$SDK_ROOT" --install \
             "platform-tools" \
             "platforms;android-33" \
             "build-tools;33.0.2"
 
-          # Create backward-compatible symlink so buildozer finds sdkmanager
           mkdir -p "$SDK_ROOT/tools/bin"
           ln -sf "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "$SDK_ROOT/tools/bin/sdkmanager"
 
@@ -67,16 +65,18 @@ jobs:
           pip install buildozer==1.5.0 cython==0.29.36
 
       - name: Decode keystore (if secret exists)
+        working-directory: mobile
         run: |
           if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > mcgg-release-key.jks
-            chmod 600 mcgg-release-key.jks
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ../mcgg-release-key.jks
+            chmod 600 ../mcgg-release-key.jks
             echo "✅ Keystore decoded"
           else
             echo "⚠️ No keystore secret found, will build debug APK"
           fi
 
       - name: Build APK
+        working-directory: mobile
         env:
           P4A_RELEASE_KEYSTORE: ${{ github.workspace }}/mcgg-release-key.jks
           P4A_RELEASE_KEYSTORE_PASSWD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -91,7 +91,7 @@ jobs:
           echo "Debug -> aidl: $(which aidl || echo 'not found')"
           ls -la "$ANDROID_SDK_ROOT/build-tools" || true
 
-          if [ -f mcgg-release-key.jks ]; then
+          if [ -f ../mcgg-release-key.jks ]; then
             echo "🔑 Building signed release APK..."
             buildozer -v android release
           else
@@ -103,4 +103,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mcgg-xbot-apk
-          path: bin/*.apk
+          path: mobile/bin/*.apk
