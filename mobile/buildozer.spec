@@ -6,24 +6,18 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 0.1
 
-# Versi Python & lib penting
-requirements = python3,kivy==2.2.1,requests
+requirements = python3==3.10.8,kivy==2.2.1,requests
 
-# Orientasi layar
 orientation = portrait
+fullscreen = 0
 
-# Android SDK/NDK
-android.api = 31
-android.minapi = 21
-android.ndk_path = /home/runner/.buildozer/android/platform/android-ndk-r25b
-android.ndk_api = 21
-
-# Lebih stabil
-p4a.branch = master
+[buildozer]
 log_level = 2
+warn_on_root = 1
 
-# Sign APK (keystore dari secret GitHub)
-android.release_keystore = ../mcgg-release-key.jks
-android.release_keystore_password = ${P4A_RELEASE_KEYSTORE_PASSWD}
-android.release_keyalias = ${P4A_RELEASE_KEYALIAS}
-android.release_keyalias_password = ${P4A_RELEASE_KEYALIAS_PASSWD}
+# Android configs
+android.api = 31
+android.ndk = 25b
+android.ndk_api = 23
+android.arch = armeabi-v7a, arm64-v8a
+android.sdk = 31
