@@ -60,8 +60,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install "sh<3.0,>=2"
           pip install git+https://github.com/kivy/python-for-android.git@develop --upgrade
-          pip install buildozer==1.5.0 cython==3.0.10
-
+          pip install buildozer==1.5.0 cython==3.0.10 wheel
+      
       - name: Download and extract NDK
         run: |
           NDK_DIR="$HOME/.buildozer/android/platform"
@@ -101,11 +101,10 @@ jobs:
 
           if [ -f ../mcgg-release-key.jks ]; then
             echo "🔑 Building signed release APK..."
-            # Gunakan --use-pep517 untuk memaksa pip menggunakan mekanisme build modern
-            buildozer -v --use-pep517 android release
+            buildozer -v android release
           else
             echo "🐞 Building debug APK..."
-            buildozer -v --use-pep517 android debug
+            buildozer -v android debug
           fi
 
       - name: Upload APK artifact
