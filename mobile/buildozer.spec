@@ -16,7 +16,8 @@ requirements = python3,kivy==2.2.1,requests,setuptools,cython,wheel
 orientation = portrait
 
 # --- Android Settings ---
-android.api = 31
+# Perbaikan: Tingkatkan API ke 33 untuk mengatasi masalah NDK
+android.api = 33
 android.minapi = 21
 # path ke SDK dan NDK akan diatur di GitHub Actions, jadi tidak perlu lagi di sini.
 # android.sdk_path = /home/runner/.buildozer/android/platform/android-sdk
