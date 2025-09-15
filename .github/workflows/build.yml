@@ -64,21 +64,25 @@ jobs:
 
       - name: Download and extract NDK
         run: |
-          NDK_DIR="$HOME/.buildozer/android/platform/android-ndk-r25b"
-          NDK_ZIP="android-ndk-r25b-linux.zip"
+          NDK_DIR="$HOME/.buildozer/android/platform"
+          NDK_VERSION="android-ndk-r25b"
           NDK_URL="https://dl.google.com/android/repository/android-ndk-r25b-linux.zip"
           
           mkdir -p "$NDK_DIR"
           
           echo "Downloading NDK from $NDK_URL"
-          wget -q "$NDK_URL" -O "$NDK_ZIP"
+          wget -q "$NDK_URL" -O "$NDK_DIR/${NDK_VERSION}-linux.zip"
           
           echo "Extracting NDK to $NDK_DIR"
-          unzip -q "$NDK_ZIP" -d "$NDK_DIR"
-          mv "$NDK_DIR/android-ndk-r25b" "$NDK_DIR/ndk-bundle"
+          unzip -q "$NDK_DIR/${NDK_VERSION}-linux.zip" -d "$NDK_DIR"
           
-          echo "ANDROID_NDK_HOME=$NDK_DIR/ndk-bundle" >> $GITHUB_ENV
+          # Fix the directory structure
+          mv "$NDK_DIR/$NDK_VERSION" "$NDK_DIR/ndk-bundle"
 
+          echo "ANDROID_NDK_HOME=$NDK_DIR/ndk-bundle" >> $GITHUB_ENV
+          echo "Setting up NDK path in PATH for the build"
+          echo "$NDK_DIR/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
+          
       - name: Decode keystore
         run: |
           if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
@@ -106,4 +110,3 @@ jobs:
         with:
           name: mcgg-xbot-apk
           path: mobile/bin/*.apk
-
