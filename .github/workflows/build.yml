@@ -67,7 +67,7 @@ jobs:
           zipalign -v 4 bin/*.apk bin/app-release-signed.apk
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: app-release-signed
           path: mobile/bin/app-release-signed.apk
