@@ -57,10 +57,10 @@ jobs:
 
       - name: Install Buildozer & deps
         run: |
-          python -m pip install --upgrade pip
-          pip install "sh<3.0,>=2"
-          pip install git+https://github.com/kivy/python-for-android.git@develop --upgrade
-          pip install buildozer==1.5.0 cython==3.0.10 wheel
+          python -m pip install --upgrade pip --trusted-host pypi.org --trusted-host files.pythonhosted.org
+          pip install "sh<3.0,>=2" --trusted-host pypi.org --trusted-host files.pythonhosted.org
+          pip install git+https://github.com/kivy/python-for-android.git@develop --upgrade --trusted-host pypi.org --trusted-host files.pythonhosted.org
+          pip install buildozer==1.5.0 cython==3.0.10 wheel --trusted-host pypi.org --trusted-host files.pythonhosted.org
       
       - name: Download and extract NDK
         run: |
