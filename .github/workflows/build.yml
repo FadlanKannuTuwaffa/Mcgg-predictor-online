@@ -96,8 +96,8 @@ jobs:
           P4A_RELEASE_KEYALIAS: ${{ secrets.KEY_ALIAS }}
           P4A_RELEASE_KEYALIAS_PASSWD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          rm -rf .buildozer/android/platform/python-for-android
-          rm -rf .buildozer/android/platform/build-*
+          # Remove all old build directories to force a fresh build
+          rm -rf .buildozer/android/platform/*
 
           if [ -f ../mcgg-release-key.jks ]; then
             echo "🔑 Building signed release APK..."
