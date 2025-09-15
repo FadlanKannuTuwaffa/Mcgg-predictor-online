@@ -57,6 +57,7 @@ jobs:
 
       - name: Install Buildozer & deps
         run: |
+          # Perbaikan: Tambahkan --trusted-host pada setiap perintah pip install
           python -m pip install --upgrade pip --trusted-host pypi.org --trusted-host files.pythonhosted.org
           pip install "sh<3.0,>=2" --trusted-host pypi.org --trusted-host files.pythonhosted.org
           pip install git+https://github.com/kivy/python-for-android.git@develop --upgrade --trusted-host pypi.org --trusted-host files.pythonhosted.org
