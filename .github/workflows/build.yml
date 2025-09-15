@@ -76,6 +76,14 @@ jobs:
           echo "ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk-r25b" >> $GITHUB_ENV
           echo "ANDROID_NDK_ROOT=$HOME/.buildozer/android/platform/android-ndk-r25b" >> $GITHUB_ENV
 
+      - name: Patch autotools (fix LT_SYS_SYMBOL_USCORE)
+        run: |
+          echo "🔧 Forcing autoreconf to avoid LT_SYS_SYMBOL_USCORE issue"
+          export AUTOMAKE=automake
+          export ACLOCAL=aclocal
+          export LIBTOOLIZE=libtoolize
+          autoreconf --version
+
       - name: Build APK
         env:
           P4A_RELEASE_KEYSTORE: ${{ github.workspace }}/mcgg-release-key.jks
