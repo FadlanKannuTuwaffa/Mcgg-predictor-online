@@ -11,7 +11,7 @@ jobs:
     timeout-minutes: 360
     defaults:
       run:
-        working-directory: mobile  # ⬅️ penting: supaya buildozer.spec ditemukan
+        working-directory: mobile  # supaya buildozer.spec ditemukan
 
     steps:
       - name: Checkout repo
@@ -29,22 +29,30 @@ jobs:
             libsqlite3-dev libjpeg-dev libpng-dev zlib1g-dev openjdk-17-jdk unzip python3-dev \
             libsndfile1 libopenblas-dev wget curl zip
 
-      - name: Prepare Android SDK/NDK
+      - name: Prepare Android SDK
         run: |
-          SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
-          mkdir -p $SDK_ROOT/cmdline-tools
-          cd $SDK_ROOT
+          SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
+          mkdir -p "$SDK_ROOT"
+          cd "$SDK_ROOT"
 
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
-          unzip -q cmdline-tools.zip -d cmdline-tools
-          mv cmdline-tools/cmdline-tools cmdline-tools/latest
-          rm cmdline-tools.zip
+          # Download command line tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
+          mkdir -p cmdline-tools/latest
+          unzip -q tools.zip -d cmdline-tools-tmp || true
+          mv cmdline-tools-tmp/* cmdline-tools/latest/ || true
+          rm -rf tools.zip cmdline-tools-tmp || true
 
-          yes | cmdline-tools/latest/bin/sdkmanager --sdk_root=$SDK_ROOT --licenses
-          cmdline-tools/latest/bin/sdkmanager --sdk_root=$SDK_ROOT --install \
-            "platform-tools" "platforms;android-31" "build-tools;31.0.0" "ndk;25.1.8937393"
+          # Install SDK components
+          yes | ./cmdline-tools/latest/bin/sdkmanager --sdk_root="$SDK_ROOT" --licenses || true
+          ./cmdline-tools/latest/bin/sdkmanager --sdk_root="$SDK_ROOT" --install \
+            "platform-tools" "platforms;android-31" "build-tools;31.0.0"
+
+          # 🔧 FIX: backward compatible symlink for buildozer
+          mkdir -p "$SDK_ROOT/tools/bin"
+          ln -sf "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "$SDK_ROOT/tools/bin/sdkmanager"
 
           echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
+          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$SDK_ROOT/platform-tools" >> $GITHUB_PATH
           echo "$SDK_ROOT/build-tools/31.0.0" >> $GITHUB_PATH
 
@@ -55,8 +63,10 @@ jobs:
 
       - name: Decode keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ../mcgg-release-key.jks
-          chmod 600 ../mcgg-release-key.jks
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ../mcgg-release-key.jks
+            chmod 600 ../mcgg-release-key.jks
+          fi
 
       - name: Set NDK path
         run: |
