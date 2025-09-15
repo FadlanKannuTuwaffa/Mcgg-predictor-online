@@ -2,85 +2,97 @@ name: Build Signed APK (MCGG-Xbot)
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    defaults:
+      run:
+        working-directory: mobile  # supaya buildozer.spec ditemukan
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Setup Python 3.10.8
-        uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.10.8"
+          python-version: '3.10'
 
-      - name: Install dependencies
+      - name: Install system packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            git zip unzip openjdk-17-jdk \
-            python3-pip python3-setuptools python3-wheel \
-            libffi-dev libssl-dev autoconf automake \
-            build-essential ccache wget curl
+          sudo apt-get install -y build-essential git ccache libffi-dev libssl-dev \
+            libsqlite3-dev libjpeg-dev libpng-dev zlib1g-dev openjdk-17-jdk unzip python3-dev \
+            libsndfile1 libopenblas-dev wget curl zip
 
-          pip install --upgrade pip Cython buildozer
-
-      - name: Setup Android SDK
+      - name: Prepare Android SDK
         run: |
-          SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
-          mkdir -p $SDK_ROOT/cmdline-tools
-          cd $SDK_ROOT
+          SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
+          mkdir -p "$SDK_ROOT"
+          cd "$SDK_ROOT"
 
-          # download cmdline tools
+          # Download command line tools
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
-          unzip -q tools.zip -d cmdline-tools
-          mv cmdline-tools/cmdline-tools cmdline-tools/latest
-          rm tools.zip
+          mkdir -p cmdline-tools/latest
+          unzip -q tools.zip -d cmdline-tools-tmp || true
+          mv cmdline-tools-tmp/* cmdline-tools/latest/ || true
+          rm -rf tools.zip cmdline-tools-tmp || true
 
-          # accept licenses
-          yes | $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$SDK_ROOT --licenses
-
-          # install required components
-          $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$SDK_ROOT --install \
+          # Install SDK components
+          yes | ./cmdline-tools/latest/bin/sdkmanager --sdk_root="$SDK_ROOT" --licenses || true
+          ./cmdline-tools/latest/bin/sdkmanager --sdk_root="$SDK_ROOT" --install \
             "platform-tools" "platforms;android-31" "build-tools;31.0.0"
 
           echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
+          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$SDK_ROOT/platform-tools" >> $GITHUB_PATH
           echo "$SDK_ROOT/build-tools/31.0.0" >> $GITHUB_PATH
-          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
-      - name: Set environment
+      - name: Fix sdkmanager path   # 🔧 tambahan agar Buildozer bisa temukan sdkmanager
+        run: |
+          SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
+          mkdir -p "$SDK_ROOT/tools/bin"
+          ln -sf "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "$SDK_ROOT/tools/bin/sdkmanager"
+
+      - name: Install Buildozer & deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install buildozer==1.5.0 cython==0.29.36
+
+      - name: Decode keystore
+        run: |
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ../mcgg-release-key.jks
+            chmod 600 ../mcgg-release-key.jks
+          fi
+
+      - name: Set NDK path
         run: |
           echo "ANDROIDNDK=$HOME/.buildozer/android/platform/android-ndk-r25b" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk-r25b" >> $GITHUB_ENV
           echo "ANDROID_NDK_ROOT=$HOME/.buildozer/android/platform/android-ndk-r25b" >> $GITHUB_ENV
 
-      - name: Force NDK r25b
-        run: |
-          rm -rf /usr/local/lib/android/sdk/ndk
-          mkdir -p /usr/local/lib/android/sdk/ndk
-          ln -s $HOME/.buildozer/android/platform/android-ndk-r25b /usr/local/lib/android/sdk/ndk/25.2.9519653
-
-      - name: Create keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > mcgg-release-key.jks
-
       - name: Build APK
-        working-directory: ./mobile
         env:
           P4A_RELEASE_KEYSTORE: ${{ github.workspace }}/mcgg-release-key.jks
           P4A_RELEASE_KEYSTORE_PASSWD: ${{ secrets.KEYSTORE_PASSWORD }}
           P4A_RELEASE_KEYALIAS: ${{ secrets.KEY_ALIAS }}
           P4A_RELEASE_KEYALIAS_PASSWD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          buildozer android release
+          if [ -f ../mcgg-release-key.jks ]; then
+            echo "🔑 Building signed release APK..."
+            buildozer -v android release
+          else
+            echo "🐞 Building debug APK..."
+            buildozer -v android debug
+          fi
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MCGG-Xbot-APK
+          name: mcgg-xbot-apk
           path: mobile/bin/*.apk
