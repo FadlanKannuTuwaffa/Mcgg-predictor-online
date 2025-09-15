@@ -32,29 +32,29 @@ jobs:
       - name: Prepare Android SDK
         run: |
           SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
-          mkdir -p "$SDK_ROOT"
-          cd "$SDK_ROOT"
+          mkdir -p "$SDK_ROOT/cmdline-tools"
+          cd "$SDK_ROOT/cmdline-tools"
 
-          # Download command line tools
+          # ✅ Download command line tools resmi
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O tools.zip
-          mkdir -p cmdline-tools/latest
-          unzip -q tools.zip -d cmdline-tools-tmp || true
-          mv cmdline-tools-tmp/* cmdline-tools/latest/ || true
-          rm -rf tools.zip cmdline-tools-tmp || true
+          unzip -q tools.zip -d .
+          rm tools.zip
+          mv cmdline-tools latest || true
 
-          # Install SDK components
-          yes | ./cmdline-tools/latest/bin/sdkmanager --sdk_root="$SDK_ROOT" --licenses || true
-          ./cmdline-tools/latest/bin/sdkmanager --sdk_root="$SDK_ROOT" --install \
-            "platform-tools" "platforms;android-31" "build-tools;31.0.0"
-
-          # 🔧 FIX: backward compatible symlink for buildozer
-          mkdir -p "$SDK_ROOT/tools/bin"
-          ln -sf "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "$SDK_ROOT/tools/bin/sdkmanager"
-
+          # ✅ Tambahkan PATH
           echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
           echo "$SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$SDK_ROOT/platform-tools" >> $GITHUB_PATH
           echo "$SDK_ROOT/build-tools/31.0.0" >> $GITHUB_PATH
+
+          # ✅ Install komponen wajib
+          yes | $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root="$SDK_ROOT" --licenses
+          $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root="$SDK_ROOT" --install \
+            "platform-tools" "platforms;android-31" "build-tools;31.0.0"
+
+          # 🔧 FIX: symlink backward compatibility buat buildozer
+          mkdir -p "$SDK_ROOT/tools/bin"
+          ln -sf "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "$SDK_ROOT/tools/bin/sdkmanager"
 
       - name: Install Buildozer & deps
         run: |
