@@ -83,6 +83,10 @@ jobs:
           echo "Setting up NDK path in PATH for the build"
           echo "$NDK_DIR/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
 
+      - name: Create p4a directory for buildozer clean
+        run: |
+          mkdir -p /home/runner/work/Mcgg-predictor-online/Mcgg-predictor-online/mobile/.buildozer/android/platform/python-for-android
+
       - name: Decode keystore
         run: |
           if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
@@ -113,3 +117,4 @@ jobs:
         with:
           name: mcgg-xbot-apk
           path: mobile/bin/*.apk
+
