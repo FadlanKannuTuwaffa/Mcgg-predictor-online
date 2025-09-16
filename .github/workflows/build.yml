@@ -67,8 +67,6 @@ jobs:
 
       - name: Apply pyjnius patch
         run: |
-          # Pastikan file patch ada di repo (misalnya di patches/jnius_fix.patch)
-          # Patch ini mengganti 'long' -> 'int' supaya build dengan Cython 3 tidak error
           find .buildozer -type f -path "*/pyjnius/jnius_utils.pxi" -execdir patch -p1 < $GITHUB_WORKSPACE/patches/jnius_fix.patch \; || true
 
       - name: Decode keystore
@@ -104,8 +102,16 @@ jobs:
             buildozer -v android debug
           fi
 
+      - name: Debug APK path
+        run: |
+          echo "== List all APKs generated =="
+          find . -name "*.apk" || true
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: mcgg-xbot-apk
-          path: mobile/bin/*.apk
+          path: |
+            mobile/bin/*.apk
+            .buildozer/android/platform/build-*/dists/*/bin/*.apk
+          if-no-files-found: warn
