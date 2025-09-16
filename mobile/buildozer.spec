@@ -3,7 +3,10 @@ title = MCGG Xbot
 package.name = mcggxbot
 package.domain = org.mcgg
 source.dir = .
-source.include_exts = py,png,jpg,kv,atlas
+
+# Pastikan semua resource ikut ke APK
+source.include_exts = py,png,jpg,jpeg,kv,atlas,ttf,ttc,otf,txt,json,xml,ini,mp3,ogg,wav,mp4,h5,tflite,pt,csv,yaml
+
 version = 1.0.0
 
 # Icon aplikasi
@@ -36,3 +39,5 @@ p4a.release_keystore = ../mcgg-release-key.jks
 p4a.release_keystore_passwd = your_keystore_password
 p4a.release_keyalias = your_key_alias
 p4a.release_keyalias_passwd = your_key_password
+
+android.permissions = INTERNET,ACCESS_NETWORK_STATE,CAMERA,RECORD_AUDIO,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE
