@@ -105,13 +105,36 @@ jobs:
       - name: Debug APK path
         run: |
           echo "== List all APKs generated =="
-          find . -name "*.apk" || true
+          find $GITHUB_WORKSPACE -type f -name "*.apk" || true
+
+      - name: Rename APKs
+        run: |
+          mkdir -p apk_output
+          for file in $(find $GITHUB_WORKSPACE -type f -name "*.apk"); do
+            base=$(basename "$file")
+            if [[ $file == *"release"* ]]; then
+              if [[ $base == *"arm64"* ]]; then
+                cp "$file" apk_output/mcgg-xbot-release-arm64.apk
+              elif [[ $base == *"armeabi-v7a"* ]]; then
+                cp "$file" apk_output/mcgg-xbot-release-armeabi.apk
+              else
+                cp "$file" apk_output/mcgg-xbot-release.apk
+              fi
+            else
+              if [[ $base == *"arm64"* ]]; then
+                cp "$file" apk_output/mcgg-xbot-debug-arm64.apk
+              elif [[ $base == *"armeabi-v7a"* ]]; then
+                cp "$file" apk_output/mcgg-xbot-debug-armeabi.apk
+              else
+                cp "$file" apk_output/mcgg-xbot-debug.apk
+              fi
+            fi
+          done
+          ls -lh apk_output
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: mcgg-xbot-apk
-          path: |
-            mobile/bin/*.apk
-            .buildozer/android/platform/build-*/dists/*/bin/*.apk
-          if-no-files-found: warn
+          path: apk_output/*.apk
+          if-no-files-found: error
