@@ -113,21 +113,9 @@ jobs:
           for file in $(find .buildozer -type f -name "*.apk"); do
             base=$(basename "$file")
             if [[ $file == *"release"* ]]; then
-              if [[ $base == *"arm64"* ]]; then
-                cp "$file" apk_output/mcgg-xbot-release-arm64.apk
-              elif [[ $base == *"armeabi-v7a"* ]]; then
-                cp "$file" apk_output/mcgg-xbot-release-armeabi.apk
-              else
-                cp "$file" apk_output/mcgg-xbot-release.apk
-              fi
+              cp "$file" apk_output/mcgg-xbot-release.apk
             else
-              if [[ $base == *"arm64"* ]]; then
-                cp "$file" apk_output/mcgg-xbot-debug-arm64.apk
-              elif [[ $base == *"armeabi-v7a"* ]]; then
-                cp "$file" apk_output/mcgg-xbot-debug-armeabi.apk
-              else
-                cp "$file" apk_output/mcgg-xbot-debug.apk
-              fi
+              cp "$file" apk_output/mcgg-xbot-debug.apk
             fi
           done
           echo "== APK setelah di-rename =="
@@ -137,5 +125,34 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mcgg-xbot-apk
-          path: apk_output/*.apk
+          path: mobile/apk_output/*.apk
           if-no-files-found: error
+
+      - name: Create GitHub Release (by run number)
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.run_number }}
+          name: "MCGG Xbot Build #${{ github.run_number }}"
+          draft: false
+          prerelease: false
+          files: mobile/apk_output/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete old "latest" release (if exists)
+        run: |
+          gh release delete latest -y || true
+          git push --delete origin latest || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create/Update "latest" Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: latest
+          name: "MCGG Xbot (Latest)"
+          draft: false
+          prerelease: false
+          files: mobile/apk_output/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
