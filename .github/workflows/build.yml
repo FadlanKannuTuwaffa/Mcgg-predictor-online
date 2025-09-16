@@ -104,15 +104,13 @@ jobs:
 
       - name: Debug APK path (deep scan)
         run: |
-          echo "== Cari APK di folder mobile =="
-          find mobile -type f -name "*.apk" || true
           echo "== Cari APK di folder .buildozer =="
           find .buildozer -type f -name "*.apk" || true
 
       - name: Rename APKs
         run: |
           mkdir -p apk_output
-          for file in $(find mobile .buildozer -type f -name "*.apk"); do
+          for file in $(find .buildozer -type f -name "*.apk"); do
             base=$(basename "$file")
             if [[ $file == *"release"* ]]; then
               if [[ $base == *"arm64"* ]]; then
