@@ -102,15 +102,17 @@ jobs:
             buildozer -v android debug
           fi
 
-      - name: Debug APK path
+      - name: Debug APK path (deep scan)
         run: |
-          echo "== List all APKs generated =="
-          find $GITHUB_WORKSPACE -type f -name "*.apk" || true
+          echo "== Cari APK di folder mobile =="
+          find mobile -type f -name "*.apk" || true
+          echo "== Cari APK di folder .buildozer =="
+          find .buildozer -type f -name "*.apk" || true
 
       - name: Rename APKs
         run: |
           mkdir -p apk_output
-          for file in $(find $GITHUB_WORKSPACE -type f -name "*.apk"); do
+          for file in $(find mobile .buildozer -type f -name "*.apk"); do
             base=$(basename "$file")
             if [[ $file == *"release"* ]]; then
               if [[ $base == *"arm64"* ]]; then
@@ -130,7 +132,8 @@ jobs:
               fi
             fi
           done
-          ls -lh apk_output
+          echo "== APK setelah di-rename =="
+          ls -lh apk_output || true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
