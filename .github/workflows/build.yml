@@ -108,6 +108,9 @@ jobs:
 
       - name: Collect APKs
         run: |
+          echo "=== DEBUG: List isi folder setelah build ==="
+          ls -R .
+          echo "=== Cari APK di mobile/bin ==="
           mkdir -p apk_output
           for file in $(find bin -type f -name "*.apk"); do
             base=$(basename "$file")
@@ -117,7 +120,8 @@ jobs:
               cp "$file" apk_output/mcgg-xbot-debug.apk
             fi
           done
-          ls -lh apk_output
+          echo "=== Isi apk_output ==="
+          ls -lh apk_output || true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
