@@ -65,10 +65,6 @@ jobs:
           python -m pip install "Cython==0.29.36"
           pip install buildozer==1.5.0 python-for-android==2024.1.21
 
-      - name: Apply pyjnius patch
-        run: |
-          find .buildozer -type f -path "*/pyjnius/jnius_utils.pxi" -execdir patch -p1 < $GITHUB_WORKSPACE/patches/jnius_fix.patch \; || true
-
       - name: Decode keystore
         run: |
           if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
@@ -86,6 +82,17 @@ jobs:
         run: |
           buildozer android clean || true
           rm -rf .buildozer/android/platform/build-* .buildozer/android/platform/cache || true
+
+      - name: Apply pyjnius patch (fix Python3 long -> int)
+        run: |
+          echo "🔧 Mencari file jnius_utils.pxi untuk patch..."
+          target=$(find .buildozer -type f -path "*/pyjnius/jnius_utils.pxi" | head -n 1 || true)
+          if [ -n "$target" ]; then
+            echo "📌 Patch target: $target"
+            patch "$target" $GITHUB_WORKSPACE/patches/jnius_fix.patch || true
+          else
+            echo "⚠️ Tidak menemukan jnius_utils.pxi, mungkin akan muncul saat build pertama."
+          fi
 
       - name: Build APK
         env:
