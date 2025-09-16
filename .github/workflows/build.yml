@@ -109,7 +109,7 @@ jobs:
       - name: Collect APKs
         run: |
           mkdir -p apk_output
-          for file in $(find .buildozer -type f -name "*.apk"); do
+          for file in $(find bin -type f -name "*.apk"); do
             base=$(basename "$file")
             if [[ $file == *"release"* ]]; then
               cp "$file" apk_output/mcgg-xbot-release.apk
