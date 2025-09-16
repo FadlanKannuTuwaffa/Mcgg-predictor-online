@@ -112,23 +112,35 @@ jobs:
       - name: Rename AAB and APKs
         run: |
           mkdir -p apk_output
-          if [ -f .buildozer/android/platform/build-arm64-v8a_armeabi-v7a/dists/mcgg_xbot/build/outputs/bundle/release/*.aab ]; then
-            cp .buildozer/android/platform/build-arm64-v8a_armeabi-v7a/dists/mcgg_xbot/build/outputs/bundle/release/*.aab apk_output/mcgg-xbot-release.aab
-          fi
-          for file in $(find mobile .buildozer -type f -name "*.apk"); do
+          
+          echo "== Mencari file build (AAB & APK) =="
+          find . -type f \( -name "*.aab" -o -name "*.apk" \)
+          
+          # Salin file .aab ke folder output
+          for file in $(find . -type f -name "*.aab" -path "*/release/*"); do
+            echo "Menyalin file rilis AAB: $file"
+            cp "$file" apk_output/mcgg-xbot-release.aab
+            break # Hentikan setelah menemukan file AAB pertama
+          done
+
+          # Salin file .apk debug ke folder output (jika ada)
+          for file in $(find . -type f -name "*.apk" -path "*/debug/*"); do
             base=$(basename "$file")
             if [[ $file == *"arm64"* ]]; then
+              echo "Menyalin file debug APK (arm64): $file"
               cp "$file" apk_output/mcgg-xbot-debug-arm64.apk
             elif [[ $file == *"armeabi-v7a"* ]]; then
+              echo "Menyalin file debug APK (armeabi-v7a): $file"
               cp "$file" apk_output/mcgg-xbot-debug-armeabi.apk
             fi
           done
-          echo "== APKs/AABs after renaming =="
+          
+          echo "== Daftar file di folder output =="
           ls -lh apk_output || true
 
       - name: Upload APK/AAB artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mcgg-xbot-release
+          name: mcgg-xbot-build-artifacts
           path: apk_output/*
           if-no-files-found: error
