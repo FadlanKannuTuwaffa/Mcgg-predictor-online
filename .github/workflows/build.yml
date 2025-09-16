@@ -83,18 +83,20 @@ jobs:
           buildozer android clean || true
           rm -rf .buildozer/android/platform/build-* .buildozer/android/platform/cache || true
 
-      - name: Apply pyjnius patch (fix Python3 long -> int)
+      # === Tahap 1: Build dummy untuk download dependensi (pyjnius dll) ===
+      - name: Prepare dependencies (first build)
         run: |
-          echo "🔧 Mencari file jnius_utils.pxi untuk patch..."
-          target=$(find .buildozer -type f -path "*/pyjnius/jnius_utils.pxi" | head -n 1 || true)
-          if [ -n "$target" ]; then
-            echo "📌 Patch target: $target"
-            patch "$target" $GITHUB_WORKSPACE/patches/jnius_fix.patch || true
-          else
-            echo "⚠️ Tidak menemukan jnius_utils.pxi, mungkin akan muncul saat build pertama."
-          fi
+          echo "🐍 Menjalankan build dummy untuk memastikan pyjnius diekstrak..."
+          buildozer -v android debug || true
 
-      - name: Build APK
+      # === Apply Patch Setelah pyjnius muncul ===
+      - name: Apply pyjnius patch
+        run: |
+          echo "🔧 Apply patch ke jnius_utils.pxi..."
+          find .buildozer -type f -path "*/pyjnius/jnius_utils.pxi" -execdir patch -p1 < $GITHUB_WORKSPACE/patches/jnius_fix.patch \; || true
+
+      # === Tahap 2: Build final APK ===
+      - name: Build APK (final)
         env:
           P4A_RELEASE_KEYSTORE: ${{ github.workspace }}/mcgg-release-key.jks
           P4A_RELEASE_KEYSTORE_PASSWD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -103,11 +105,21 @@ jobs:
         run: |
           if [ -f ../mcgg-release-key.jks ]; then
             echo "🔑 Building signed release APK..."
-            buildozer -v android release
+            buildozer -v android release 2>&1 | tee buildozer_final.log
           else
             echo "🐞 Building debug APK..."
-            buildozer -v android debug
+            buildozer -v android debug 2>&1 | tee buildozer_final.log
           fi
+
+      # === Scanner Log otomatis jika Build gagal ===
+      - name: Analyze buildozer log
+        if: failure()
+        run: |
+          echo "📄 Menampilkan 100 baris terakhir log:"
+          tail -n 100 buildozer_final.log || true
+          echo
+          echo "❌ Deteksi error utama:"
+          grep -i -E "error|failed|exception" buildozer_final.log | tail -n 20 || true
 
       - name: Debug APK path (deep scan)
         run: |
