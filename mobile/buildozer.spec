@@ -1,39 +1,38 @@
 [app]
-# --- App Info ---
 title = MCGG Xbot
-package.name = mcgg_xbot
+package.name = mcggxbot
 package.domain = org.mcgg
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
-version = 0.1
+version = 1.0.0
 
-# --- Dependencies ---
-# Jangan pakai sh>=2 karena konflik dengan p4a
-requirements = python3,kivy==2.2.1,requests,setuptools,cython==0.29.36,wheel
+# Icon aplikasi
+icon.filename = %(source.dir)s/assets/iconmcgg.png
 
-# --- Orientation ---
+# Orientasi aplikasi
 orientation = portrait
 
-# --- Android Settings ---
-android.api = 33
-android.minapi = 21
-android.ndk_api = 21
+# Permissions (tambah sesuai kebutuhan app kamu)
+android.permissions = INTERNET,ACCESS_NETWORK_STATE,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE
 
-# Force build to generate APK instead of AAB
-android.release_artifact = apk
-android.debug_artifact = apk
+# Requirements Python
+requirements = python3, kivy, requests, pillow
 
-# --- Python-for-Android ---
-p4a.bootstrap = sdl2
-# p4a.branch = stable   # opsional, aktifkan kalau mau p4a stable branch
-
+[buildozer]
 log_level = 2
+warn_on_root = 1
 
-# --- Keystore Config (untuk Release build) ---
-android.release_keystore = ../mcgg-release-key.jks
-android.release_keystore_password = ${P4A_RELEASE_KEYSTORE_PASSWD}
-android.release_keyalias = ${P4A_RELEASE_KEYALIAS}
-android.release_keyalias_password = ${P4A_RELEASE_KEYALIAS_PASSWD}
+# Android target
+android.api = 31
+android.minapi = 23
+android.sdk = 31
+android.ndk = 25b
+android.archs = arm64-v8a, armeabi-v7a
+android.ndk_path = $HOME/.buildozer/android/platform/android-ndk-r25b
+android.sdk_path = $HOME/.buildozer/android/platform/android-sdk
 
-# --- Permissions (opsional) ---
-# android.permissions = INTERNET,ACCESS_NETWORK_STATE
+# Packaging
+p4a.release_keystore = ../mcgg-release-key.jks
+p4a.release_keystore_passwd = your_keystore_password
+p4a.release_keyalias = your_key_alias
+p4a.release_keyalias_passwd = your_key_password
