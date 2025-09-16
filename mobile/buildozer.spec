@@ -4,22 +4,23 @@ package.name = mcggxbot
 package.domain = org.mcgg
 source.dir = .
 
-# Pastikan semua resource ikut ke APK
+# Resource yang dibundle
 source.include_exts = py,png,jpg,jpeg,kv,atlas,ttf,ttc,otf,txt,json,xml,ini,mp3,ogg,wav,mp4,h5,tflite,pt,csv,yaml
 
 version = 1.0.0
 
-# Icon aplikasi
+# Icon aplikasi (pastikan file ada)
 icon.filename = %(source.dir)s/assets/iconmcgg.png
 
-# Orientasi aplikasi
+# Konfigurasi orientasi & fullscreen
 orientation = portrait
+fullscreen = 1
 
-# Permissions (tambah sesuai kebutuhan app kamu)
-android.permissions = INTERNET,ACCESS_NETWORK_STATE,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE
+# Permissions
+android.permissions = INTERNET,ACCESS_NETWORK_STATE,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,CAMERA,RECORD_AUDIO
 
-# Requirements Python
-requirements = python3, kivy, requests, pillow
+# Dependencies (pakai SDL2 agar window bisa jalan di Android)
+requirements = python3, kivy==2.2.1, requests, pillow, sdl2, sdl2_image, sdl2_mixer, sdl2_ttf
 
 [buildozer]
 log_level = 2
@@ -33,11 +34,3 @@ android.ndk = 25b
 android.archs = arm64-v8a, armeabi-v7a
 android.ndk_path = $HOME/.buildozer/android/platform/android-ndk-r25b
 android.sdk_path = $HOME/.buildozer/android/platform/android-sdk
-
-# Packaging
-p4a.release_keystore = ../mcgg-release-key.jks
-p4a.release_keystore_passwd = your_keystore_password
-p4a.release_keyalias = your_key_alias
-p4a.release_keyalias_passwd = your_key_password
-
-android.permissions = INTERNET,ACCESS_NETWORK_STATE,CAMERA,RECORD_AUDIO,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE
