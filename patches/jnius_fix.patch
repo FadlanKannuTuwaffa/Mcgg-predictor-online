@@ -1,0 +1,9 @@
+--- a/jnius/jnius_utils.pxi
++++ b/jnius/jnius_utils.pxi
+@@ -320,7 +320,8 @@
+-    if isinstance(arg, long) and arg < 2147483648:
+-        return <jint>arg
++    # Fix untuk Python3 / Cython3:
++    # Python3 tidak punya 'long', semua integer adalah 'int'
++    if isinstance(arg, int) and arg < 2147483648:
++        return <jint>arg
