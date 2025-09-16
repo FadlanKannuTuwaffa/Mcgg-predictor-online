@@ -19,6 +19,10 @@ android.api = 33
 android.minapi = 21
 android.ndk_api = 21
 
+# Force build to generate APK instead of AAB
+android.release_artifact = apk
+android.debug_artifact = apk
+
 # --- Python-for-Android ---
 p4a.bootstrap = sdl2
 # p4a.branch = stable   # opsional, aktifkan kalau mau p4a stable branch
