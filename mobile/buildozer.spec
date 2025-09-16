@@ -9,7 +9,7 @@ source.include_exts = py,png,jpg,jpeg,kv,atlas,ttf,ttc,otf,txt,json,xml,ini,mp3,
 
 version = 1.0.0
 
-# Icon aplikasi (pastikan file ada di mobile/assets/iconmcgg.png)
+# Icon aplikasi (pastikan file ada)
 icon.filename = %(source.dir)s/assets/iconmcgg.png
 
 # Konfigurasi orientasi & fullscreen
@@ -19,7 +19,7 @@ fullscreen = 1
 # Permissions
 android.permissions = INTERNET,ACCESS_NETWORK_STATE,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,CAMERA,RECORD_AUDIO
 
-# Dependencies
+# Dependencies (pakai SDL2 agar window bisa jalan di Android)
 requirements = python3, kivy==2.2.1, requests, pillow, sdl2, sdl2_image, sdl2_mixer, sdl2_ttf
 
 [buildozer]
