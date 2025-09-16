@@ -106,28 +106,22 @@ jobs:
             buildozer -v android debug
           fi
 
-      - name: Collect APKs
+      - name: Collect Artifacts
         run: |
-          echo "=== DEBUG: List isi folder setelah build ==="
-          ls -R .
-          echo "=== Cari APK di mobile/bin ==="
+          echo "=== Cari APK/AAB di bin/ ==="
           mkdir -p apk_output
-          for file in $(find bin -type f -name "*.apk"); do
+          for file in $(find bin -type f \( -name "*.apk" -o -name "*.aab" \)); do
             base=$(basename "$file")
-            if [[ $file == *"release"* ]]; then
-              cp "$file" apk_output/mcgg-xbot-release.apk
-            else
-              cp "$file" apk_output/mcgg-xbot-debug.apk
-            fi
+            cp "$file" "apk_output/$base"
           done
           echo "=== Isi apk_output ==="
           ls -lh apk_output || true
 
-      - name: Upload APK artifact
+      - name: Upload APK/AAB artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mcgg-xbot-apk
-          path: apk_output/*.apk
+          name: mcgg-xbot-artifacts
+          path: apk_output/*
           if-no-files-found: error
 
       - name: Create GitHub Release (by run number)
@@ -137,7 +131,7 @@ jobs:
           name: "MCGG Xbot Build #${{ github.run_number }}"
           draft: false
           prerelease: false
-          files: apk_output/*.apk
+          files: apk_output/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -148,6 +142,6 @@ jobs:
           name: "MCGG Xbot (Latest)"
           draft: false
           prerelease: false
-          files: apk_output/*.apk
+          files: apk_output/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
