@@ -36,7 +36,7 @@ jobs:
             automake autoconf libtool libtool-bin m4 pkg-config gettext \
             libltdl-dev
 
-      - name: Prepare Android SDK (fix sdkmanager)
+      - name: Prepare Android SDK
         run: |
           SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
           mkdir -p "$SDK_ROOT"
@@ -49,7 +49,7 @@ jobs:
           echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
           echo "$SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$SDK_ROOT/platform-tools" >> $GITHUB_PATH
-          yes | $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          yes | $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
           $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --install \
             "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
@@ -93,8 +93,7 @@ jobs:
       - name: Apply pyjnius patch
         run: |
           echo "🔧 Apply patch ke jnius_utils.pxi..."
-          find .buildozer -type f -path "*/pyjnius/jnius_utils.pxi" \
-            -execdir patch -p1 < $GITHUB_WORKSPACE/patches/jnius_fix.patch \; || true
+          find .buildozer -type f -path "*/pyjnius/jnius_utils.pxi" -execdir patch -p1 < $GITHUB_WORKSPACE/patches/jnius_fix.patch \; || true
 
       # === Tahap 2: Build final APK ===
       - name: Build APK (final)
@@ -112,7 +111,8 @@ jobs:
             buildozer -v android debug 2>&1 | tee buildozer_final.log
           fi
 
-      - name: Analyze buildozer log (if fail)
+      # === Scanner Log otomatis jika Build gagal ===
+      - name: Analyze buildozer log
         if: failure()
         run: |
           echo "📄 Menampilkan 100 baris terakhir log:"
@@ -128,23 +128,23 @@ jobs:
 
       - name: Rename APKs
         run: |
-          mkdir -p apk_output
+          mkdir -p mobile/apk_output
           for file in $(find .buildozer -type f -name "*.apk"); do
             base=$(basename "$file")
             if [[ $file == *"release"* ]]; then
-              cp "$file" apk_output/mcgg-xbot-release.apk
+              cp "$file" mobile/apk_output/mcgg-xbot-release.apk
             else
-              cp "$file" apk_output/mcgg-xbot-debug.apk
+              cp "$file" mobile/apk_output/mcgg-xbot-debug.apk
             fi
           done
           echo "== APK setelah di-rename =="
-          ls -lh apk_output || true
+          ls -lh mobile/apk_output || true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: mcgg-xbot-apk
-          path: apk_output/*.apk
+          path: mobile/apk_output/*.apk
           if-no-files-found: error
 
       - name: Create GitHub Release (by run number)
@@ -154,7 +154,7 @@ jobs:
           name: "MCGG Xbot Build #${{ github.run_number }}"
           draft: false
           prerelease: false
-          files: apk_output/*.apk
+          files: mobile/apk_output/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -172,6 +172,6 @@ jobs:
           name: "MCGG Xbot (Latest)"
           draft: false
           prerelease: false
-          files: apk_output/*.apk
+          files: mobile/apk_output/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
