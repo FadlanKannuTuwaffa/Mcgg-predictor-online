@@ -36,7 +36,7 @@ jobs:
             automake autoconf libtool libtool-bin m4 pkg-config gettext \
             libltdl-dev
 
-      - name: Prepare Android SDK
+      - name: Prepare Android SDK (fix sdkmanager)
         run: |
           SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
           mkdir -p "$SDK_ROOT"
@@ -49,7 +49,7 @@ jobs:
           echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
           echo "$SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$SDK_ROOT/platform-tools" >> $GITHUB_PATH
-          yes | $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
+          yes | $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
           $SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --install \
             "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
@@ -93,7 +93,8 @@ jobs:
       - name: Apply pyjnius patch
         run: |
           echo "🔧 Apply patch ke jnius_utils.pxi..."
-          find .buildozer -type f -path "*/pyjnius/jnius_utils.pxi" -execdir patch -p1 < $GITHUB_WORKSPACE/patches/jnius_fix.patch \; || true
+          find .buildozer -type f -path "*/pyjnius/jnius_utils.pxi" \
+            -execdir patch -p1 < $GITHUB_WORKSPACE/patches/jnius_fix.patch \; || true
 
       # === Tahap 2: Build final APK ===
       - name: Build APK (final)
@@ -111,8 +112,7 @@ jobs:
             buildozer -v android debug 2>&1 | tee buildozer_final.log
           fi
 
-      # === Scanner Log otomatis jika Build gagal ===
-      - name: Analyze buildozer log
+      - name: Analyze buildozer log (if fail)
         if: failure()
         run: |
           echo "📄 Menampilkan 100 baris terakhir log:"
@@ -144,7 +144,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mcgg-xbot-apk
-          path: mobile/apk_output/*.apk
+          path: apk_output/*.apk
           if-no-files-found: error
 
       - name: Create GitHub Release (by run number)
@@ -154,7 +154,7 @@ jobs:
           name: "MCGG Xbot Build #${{ github.run_number }}"
           draft: false
           prerelease: false
-          files: mobile/apk_output/*.apk
+          files: apk_output/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -172,6 +172,6 @@ jobs:
           name: "MCGG Xbot (Latest)"
           draft: false
           prerelease: false
-          files: mobile/apk_output/*.apk
+          files: apk_output/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
