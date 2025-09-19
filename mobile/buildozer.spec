@@ -11,6 +11,8 @@ icon.filename = %(source.dir)s/assets/iconmcgg.png
 
 version = 1.0.0
 
+requirements = python3,kivy,requests,setuptools,cython,wheel
+
 # --- UI Config ---
 orientation = portrait
 fullscreen = 1
@@ -28,6 +30,8 @@ warn_on_root = 1
 # --- Android ---
 android.api = 33
 android.minapi = 21
+android.ndk_api = 21
+p4a.bootstrap = sdl2
 android.sdk = 33
 android.ndk = 25b
 android.archs = arm64-v8a, armeabi-v7a
