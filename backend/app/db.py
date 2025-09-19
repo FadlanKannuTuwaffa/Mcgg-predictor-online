@@ -1,7 +1,10 @@
-from sqlmodel import SQLModel, create_engine, Session
 import os
+from sqlmodel import SQLModel, create_engine, Session
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./mcgg.db")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(BASE_DIR, "mcgg.db")
+
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{db_path}")
 engine = create_engine(DATABASE_URL, echo=False)
 
 def init_db():
