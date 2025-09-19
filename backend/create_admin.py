@@ -5,8 +5,8 @@ from app.auth import hash_password
 from sqlmodel import Session
 
 init_db()
-username = input('admin username: ')
-pw = input('admin password: ')
+username = input('admin username: xbot')
+pw = input('admin password: xbot234 ')
 with Session(engine) as s:
     u = User(username=username, password_hash=hash_password(pw), is_admin=True, active=True)
     s.add(u); s.commit()
