@@ -1,12 +1,21 @@
+# backend/app/auth.py
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 import os
+import secrets
 
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET = os.getenv("JWT_SECRET", "devsecret")
+
+# Pakai secret dari environment; kalau tidak ada, generate random sementara
+SECRET = os.getenv("JWT_SECRET")
+if not SECRET:
+    # ⚠️ Peringatan: random secret ini akan berubah setiap restart
+    # Jadi hanya cocok untuk development, bukan production
+    SECRET = secrets.token_hex(32)
+
 ALGORITHM = "HS256"
-ACCESS_EXPIRE_MINUTES = 60*24*7
+ACCESS_EXPIRE_MINUTES = 60 * 24 * 7  # 7 hari
 
 def hash_password(pw: str):
     return pwd_ctx.hash(pw)
