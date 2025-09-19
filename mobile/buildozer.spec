@@ -11,8 +11,6 @@ icon.filename = %(source.dir)s/assets/iconmcgg.png
 
 version = 1.0.0
 
-requirements = python3,kivy,requests,setuptools,cython,wheel
-
 # --- UI Config ---
 orientation = portrait
 fullscreen = 1
