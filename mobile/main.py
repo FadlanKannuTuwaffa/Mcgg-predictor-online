@@ -1,53 +1,58 @@
-# main.py
-import os
-import traceback
-from kivy.config import Config
-from kivy.utils import platform
 from kivy.app import App
-from kivy.lang import Builder
-from kivy.uix.boxlayout import BoxLayout
-from kivy.core.window import Window
+from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
+from kivy.storage.jsonstore import JsonStore
+from kivy.uix.popup import Popup
+from kivy.uix.label import Label
+import requests, threading
 
-# Optional config
-Config.set("input", "mouse", "mouse,multitouch_on_demand")
+API_URL = "http://127.0.0.1:8000"
 
-# Atur ukuran default jika dijalankan di desktop
-if platform in ("linux", "win"):
-    Window.size = (360, 640)
+store = JsonStore("user.json")
 
-KV_FILENAME = "app.kv"
+class LoginScreen(Screen):
+    def do_login(self, username, password):
+        def task():
+            try:
+                res = requests.post(f"{API_URL}/login", json={"username": username, "password": password})
+                if res.status_code == 200:
+                    data = res.json()
+                    store.put("auth", token=data["access_token"], user=username)
+                    self.manager.current = "dashboard"
+                else:
+                    self.show_error("Login gagal!")
+            except Exception as e:
+                self.show_error(str(e))
+        threading.Thread(target=task).start()
 
-class RootWidget(BoxLayout):
+    def show_error(self, msg):
+        Popup(title="Error", content=Label(text=msg), size_hint=(0.8,0.4)).open()
+
+class RegisterScreen(Screen):
+    def do_register(self, username, password):
+        def task():
+            try:
+                res = requests.post(f"{API_URL}/register", json={"username": username, "password": password})
+                if res.status_code == 200:
+                    self.manager.current = "login"
+                else:
+                    self.show_error("Register gagal!")
+            except Exception as e:
+                self.show_error(str(e))
+        threading.Thread(target=task).start()
+
+    def show_error(self, msg):
+        Popup(title="Error", content=Label(text=msg), size_hint=(0.8,0.4)).open()
+
+class DashboardScreen(Screen):
     pass
 
 class McggApp(App):
     def build(self):
-        try:
-            if os.path.exists(KV_FILENAME):
-                Builder.load_file(KV_FILENAME)
-            return RootWidget()
-        except Exception:
-            self._log_exception("Error during build()")
-            return RootWidget()
-
-    def on_start(self):
-        try:
-            # Jika ada inisialisasi tambahan, taruh di sini
-            pass
-        except Exception:
-            self._log_exception("Error in on_start()")
-
-    def _log_exception(self, header="Exception"):
-        tb = traceback.format_exc()
-        msg = f"{header}\n{tb}\n"
-        print(msg)
-        try:
-            p = os.path.join(self.user_data_dir, "crash.log")
-            os.makedirs(self.user_data_dir, exist_ok=True)
-            with open(p, "a") as f:
-                f.write(msg)
-        except Exception:
-            print("Gagal menulis crash log:", msg)
+        sm = ScreenManager(transition=FadeTransition())
+        sm.add_widget(LoginScreen(name="login"))
+        sm.add_widget(RegisterScreen(name="register"))
+        sm.add_widget(DashboardScreen(name="dashboard"))
+        return sm
 
 if __name__ == "__main__":
     McggApp().run()
