@@ -32,6 +32,7 @@ android.api = 33
 android.minapi = 21
 android.ndk_api = 21
 p4a.bootstrap = sdl2
+p4a.branch = master
 android.sdk = 33
 android.ndk = 25b
 android.archs = arm64-v8a, armeabi-v7a
