@@ -1,13 +1,23 @@
-<MainScreen>:
-    BoxLayout:
-        orientation: 'vertical'
-        Label:
-            text: 'MCGG-Xbot'
-            size_hint_y: None
-            height: '48dp'
-        Button:
-            text: 'Login Screen (open console log)'
-            on_release: app.go_login()
-        Button:
-            text: 'Start dummy match'
-            on_release: app.demo_start()
+#:kivy 2.2.1
+
+<RootWidget>:
+    orientation: "vertical"
+    padding: dp(10)
+    spacing: dp(10)
+
+    Label:
+        text: "MCGG Xbot"
+        size_hint_y: None
+        height: self.texture_size[1] + dp(10)
+        font_size: "20sp"
+
+    Label:
+        id: status_label
+        text: "✅ App berhasil dibuka!"
+        font_size: "16sp"
+
+    Button:
+        text: "Tes Tombol"
+        size_hint_y: None
+        height: dp(48)
+        on_release: app.root.ids.status_label.text = "Tombol ditekan!"
