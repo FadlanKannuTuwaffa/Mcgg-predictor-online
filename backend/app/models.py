@@ -1,3 +1,4 @@
+# backend/app/models.py
 from sqlmodel import SQLModel, Field
 from typing import Optional
 from datetime import datetime
@@ -10,6 +11,7 @@ class User(SQLModel, table=True):
     active: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)
     expire_at: Optional[datetime] = None
+    email: Optional[str] = None
 
 class Match(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -24,3 +26,4 @@ class PredictionStat(SQLModel, table=True):
     user_id: int = Field(index=True)
     key: str
     count: int = 0
+    last_updated: Optional[datetime] = None
