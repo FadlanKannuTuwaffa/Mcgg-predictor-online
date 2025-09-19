@@ -1,5 +1,13 @@
 # backend/app/main.py
-from fastapi import FastAPI, Depends, HTTPException, Header, BackgroundTasks
+import os
+from dotenv import load_dotenv
+
+# Load .env file dari folder backend/
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+env_path = os.path.join(BASE_DIR, "..", ".env")
+load_dotenv(dotenv_path=env_path)
+
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from sqlmodel import Session, select
 from .db import init_db, engine
 from .models import User, Match, PredictionStat
@@ -7,7 +15,7 @@ from .schemas import *
 from .auth import hash_password, verify_password, create_access_token, decode_token, get_current_user
 from .predictor import montecarlo_predict
 from datetime import datetime, timedelta
-import json, os, smtplib, ssl
+import json, smtplib, ssl
 from email.message import EmailMessage
 
 app = FastAPI(title="MCGG-Xbot API")
@@ -77,7 +85,6 @@ def admin_approve(username: str, auth: dict = Depends(get_current_user)):
         target.active = True
         target.expire_at = datetime.utcnow() + timedelta(days=30)
         s.add(target); s.commit()
-        # optionally email
         if target.email:
             send_email(target.email, "Akun Diaktifkan", f"Akun {target.username} diaktifkan sampai {target.expire_at}.")
         return {'ok': True}
@@ -142,13 +149,8 @@ def finish_match(match_id: int, background_tasks: BackgroundTasks, auth: dict = 
         rounds = json.loads(m.rounds_data or '[]')
         m.result_summary = f'rounds={len(rounds)}'
         s.add(m); s.commit()
-
-        # Update prediction stats simple example
-        # For demonstration, increment stat for first predicted opponent if present
         try:
-            # naive: read last predicted opponent from rounds
             if rounds:
-                # find last opponent entries
                 opps = [r.get("opponent") for r in rounds if 'opponent' in r]
                 if opps:
                     key = opps[-1]
@@ -162,7 +164,6 @@ def finish_match(match_id: int, background_tasks: BackgroundTasks, auth: dict = 
                     s.commit()
         except Exception:
             pass
-
         return {'ok': True}
 
 @app.get('/stats')
@@ -172,7 +173,6 @@ def get_stats(auth: dict = Depends(get_current_user)):
         stats = s.exec(select(PredictionStat).where(PredictionStat.user_id==user.id)).all()
         return [{"key": st.key, "count": st.count} for st in stats]
 
-# Admin: run daily check to email users near expiry (optional endpoint)
 @app.post("/admin/check-expiry")
 def check_expiry(background_tasks: BackgroundTasks, auth: dict = Depends(get_current_user)):
     with Session(engine) as s:
