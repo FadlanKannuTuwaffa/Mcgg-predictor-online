@@ -1,5 +1,8 @@
+# mobile/main.py
 import threading
 import requests
+import time
+from datetime import datetime
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.properties import StringProperty, ListProperty, BooleanProperty, NumericProperty
@@ -7,7 +10,8 @@ from kivy.clock import mainthread
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.storage.jsonstore import JsonStore
 
-API_BASE = "http://127.0.0.1:8000"  # ganti dengan URL backend jika sudah deploy
+API_BASE = "http://127.0.0.1:8000"  # update to your backend URL or env var
+
 store = JsonStore("auth.json")
 
 KV = open("mobile/app.kv", "r", encoding="utf-8").read()
@@ -98,6 +102,7 @@ class DashboardScreen(BaseScreen):
         if store.exists("user"):
             tok = store.get("user")["token"]
             self.username = store.get("user")["username"]
+            # check admin flag from backend
             try:
                 resp = requests.get(f"{API_BASE}/me", headers={"Authorization": f"Bearer {tok}"}, timeout=10)
                 if resp.status_code == 200:
@@ -118,8 +123,10 @@ class PredictScreen(BaseScreen):
     players = ListProperty(["" for _ in range(8)])
     match_id = NumericProperty(0)
     predictions = ListProperty([])
+    loading = BooleanProperty(False)
 
     def on_pre_enter(self):
+        # reset inputs
         for i in range(1, 8):
             self.ids[f"p{i+1}"].text = ""
         self.ids.p1.text = self.ids.p1.text or self.get_username_default()
@@ -131,6 +138,7 @@ class PredictScreen(BaseScreen):
         return store.get("user")["username"] if store.exists("user") else "Player1"
 
     def start_predict(self):
+        # Collect players
         names = []
         for i in range(1, 9):
             text = self.ids[f"p{i}"].text.strip()
@@ -139,9 +147,10 @@ class PredictScreen(BaseScreen):
                 names.append(user)
             else:
                 if not text:
-                    self.status_msg = f"Isi nama player {i}"
+                    self.status_msg = f"Isi nama player {i} atau set placeholder"
                     return
                 names.append(text)
+        # call backend predict and start_match
         token = store.get("user")["token"]
         self.loading = True
         threading.Thread(target=self._predict_thread, args=(names, token), daemon=True).start()
@@ -154,6 +163,7 @@ class PredictScreen(BaseScreen):
             return
         if resp.status_code == 200:
             preds = resp.json().get("predictions", [])
+            # start match
             try:
                 resp2 = requests.post(f"{API_BASE}/match/start", json={"players": names}, headers={"Authorization": f"Bearer {token}"}, timeout=20)
                 if resp2.status_code == 200:
@@ -172,6 +182,7 @@ class PredictScreen(BaseScreen):
         self.predictions = preds
         self.match_id = mid or 0
         self.ids.pred_text.text = "\n".join([f"{p[0]} — {p[1]*100:.1f}%" for p in preds]) if preds else "Tidak ada prediksi"
+        # go to match screen to track rounds
         if mid:
             App.get_running_app().root.get_screen("match").match_id = mid
         App.get_running_app().root.current = "match"
@@ -194,7 +205,10 @@ class MatchScreen(BaseScreen):
     def save_round(self):
         opp = self.ids.opponent_input.text.strip()
         if not opp:
-            self.status_msg = "Isi nama lawan"
+            self.status_msg = "Isi nama lawan terlebih dahulu"
+            return
+        if not store.exists("user"):
+            self.status_msg = "Perlu login"
             return
         token = store.get("user")["token"]
         data = {"match_id": self.match_id, "round_name": self.rounds[self.current_round], "opponent": opp}
@@ -204,7 +218,7 @@ class MatchScreen(BaseScreen):
                 self.status_msg = f"Lawan {opp} tersimpan"
                 self.ids.opponent_input.text = ""
             else:
-                self.status_msg = f"Error: {resp.status_code}"
+                self.status_msg = f"Error: {resp.status_code} {resp.text}"
         except Exception as e:
             self.status_msg = f"Network error: {e}"
 
@@ -217,10 +231,10 @@ class MatchScreen(BaseScreen):
         try:
             resp = requests.post(f"{API_BASE}/match/eliminate", json={"match_id": self.match_id, "eliminated": elim}, headers={"Authorization": f"Bearer {token}"}, timeout=10)
             if resp.status_code == 200:
-                self.status_msg = f"{elim} dieliminasi"
+                self.status_msg = f"{elim} ditandai tereliminasi"
                 self.ids.elim_input.text = ""
             else:
-                self.status_msg = f"Error: {resp.status_code}"
+                self.status_msg = f"Error: {resp.status_code} {resp.text}"
         except Exception as e:
             self.status_msg = f"Network error: {e}"
 
@@ -236,9 +250,9 @@ class MatchScreen(BaseScreen):
         try:
             resp = requests.post(f"{API_BASE}/match/finish", params={"match_id": self.match_id}, headers={"Authorization": f"Bearer {token}"}, timeout=10)
             if resp.status_code == 200:
-                self.status_msg = "Pertandingan selesai"
+                self.status_msg = "Pertandingan selesai, data tersimpan"
             else:
-                self.status_msg = f"Error: {resp.status_code}"
+                self.status_msg = f"Error: {resp.status_code} {resp.text}"
         except Exception as e:
             self.status_msg = f"Network error: {e}"
 
@@ -247,14 +261,16 @@ class AdminScreen(BaseScreen):
     users = ListProperty([])
 
     def on_pre_enter(self):
+        if not store.exists("user"):
+            self.status_msg = "Perlu login admin"
+            return
         token = store.get("user")["token"]
         try:
             resp = requests.get(f"{API_BASE}/admin/users", headers={"Authorization": f"Bearer {token}"}, timeout=10)
             if resp.status_code == 200:
                 self.users = resp.json()
-                self.status_msg = "Data user dimuat"
             else:
-                self.status_msg = f"Error: {resp.status_code}"
+                self.status_msg = f"Error: {resp.status_code} {resp.text}"
         except Exception as e:
             self.status_msg = f"Network error: {e}"
 
@@ -266,9 +282,13 @@ class AdminScreen(BaseScreen):
                 self.status_msg = f"{username} diaktifkan"
                 self.on_pre_enter()
             else:
-                self.status_msg = f"Error: {resp.status_code}"
+                self.status_msg = f"Error: {resp.status_code} {resp.text}"
         except Exception as e:
             self.status_msg = f"Network error: {e}"
+
+
+class Root(SceenManager):  # fix: class name typo if needed
+    pass
 
 
 class MCGGApp(App):
