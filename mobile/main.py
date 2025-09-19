@@ -3,6 +3,18 @@ import threading
 import requests
 import time
 from datetime import datetime
+import os
+
+# Set custom KIVY_HOME supaya tidak error "Permission denied" di Android
+kivy_home = os.path.join(os.getcwd(), '.kivy')
+os.environ.setdefault('KIVY_HOME', kivy_home)
+try:
+    os.makedirs(kivy_home, exist_ok=True)
+except Exception:
+    tmp = os.path.join('/data', 'local', 'tmp', 'kivy_home')
+    os.environ['KIVY_HOME'] = tmp
+    os.makedirs(tmp, exist_ok=True)
+
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.properties import StringProperty, ListProperty, BooleanProperty, NumericProperty
@@ -10,9 +22,10 @@ from kivy.clock import mainthread
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.storage.jsonstore import JsonStore
 
-API_BASE = "http://127.0.0.1:8000"  # update to your backend URL or env var
+API_BASE = "http://127.0.0.1:8000"  # update ke URL backend kamu
 
-store = JsonStore("auth.json")
+# Simpan auth.json di dalam KIVY_HOME agar aman
+store = JsonStore(os.path.join(os.environ.get("KIVY_HOME", "."), "auth.json"))
 
 KV = open("mobile/app.kv", "r", encoding="utf-8").read()
 
@@ -119,191 +132,14 @@ class DashboardScreen(BaseScreen):
         App.get_running_app().root.current = "login"
 
 
-class PredictScreen(BaseScreen):
-    players = ListProperty(["" for _ in range(8)])
-    match_id = NumericProperty(0)
-    predictions = ListProperty([])
-    loading = BooleanProperty(False)
-
-    def on_pre_enter(self):
-        # reset inputs
-        for i in range(1, 8):
-            self.ids[f"p{i+1}"].text = ""
-        self.ids.p1.text = self.ids.p1.text or self.get_username_default()
-        self.ids.p1.disabled = True
-        self.predictions = []
-        self.status_msg = ""
-
-    def get_username_default(self):
-        return store.get("user")["username"] if store.exists("user") else "Player1"
-
-    def start_predict(self):
-        # Collect players
-        names = []
-        for i in range(1, 9):
-            text = self.ids[f"p{i}"].text.strip()
-            if i == 1:
-                user = self.get_username_default()
-                names.append(user)
-            else:
-                if not text:
-                    self.status_msg = f"Isi nama player {i} atau set placeholder"
-                    return
-                names.append(text)
-        # call backend predict and start_match
-        token = store.get("user")["token"]
-        self.loading = True
-        threading.Thread(target=self._predict_thread, args=(names, token), daemon=True).start()
-
-    def _predict_thread(self, names, token):
-        try:
-            resp = requests.post(f"{API_BASE}/match/predict", json={"players": names}, headers={"Authorization": f"Bearer {token}"}, timeout=30)
-        except Exception as e:
-            self._predict_fail(f"Network error: {e}")
-            return
-        if resp.status_code == 200:
-            preds = resp.json().get("predictions", [])
-            # start match
-            try:
-                resp2 = requests.post(f"{API_BASE}/match/start", json={"players": names}, headers={"Authorization": f"Bearer {token}"}, timeout=20)
-                if resp2.status_code == 200:
-                    mid = resp2.json().get("match_id")
-                else:
-                    mid = None
-            except Exception:
-                mid = None
-            self._predict_success(preds, mid)
-        else:
-            self._predict_fail(f"{resp.status_code}: {resp.text}")
-
-    @mainthread
-    def _predict_success(self, preds, mid):
-        self.loading = False
-        self.predictions = preds
-        self.match_id = mid or 0
-        self.ids.pred_text.text = "\n".join([f"{p[0]} — {p[1]*100:.1f}%" for p in preds]) if preds else "Tidak ada prediksi"
-        # go to match screen to track rounds
-        if mid:
-            App.get_running_app().root.get_screen("match").match_id = mid
-        App.get_running_app().root.current = "match"
-
-    @mainthread
-    def _predict_fail(self, msg):
-        self.loading = False
-        self.status_msg = msg
-
-
-class MatchScreen(BaseScreen):
-    rounds = ["I-II", "I-III", "I-IV", "Fatebox"]
-    current_round = NumericProperty(0)
-    match_id = NumericProperty(0)
-
-    def on_pre_enter(self):
-        self.ids.round_label.text = f"📍 Babak: {self.rounds[self.current_round]}"
-        self.status_msg = ""
-
-    def save_round(self):
-        opp = self.ids.opponent_input.text.strip()
-        if not opp:
-            self.status_msg = "Isi nama lawan terlebih dahulu"
-            return
-        if not store.exists("user"):
-            self.status_msg = "Perlu login"
-            return
-        token = store.get("user")["token"]
-        data = {"match_id": self.match_id, "round_name": self.rounds[self.current_round], "opponent": opp}
-        try:
-            resp = requests.post(f"{API_BASE}/match/round", json=data, headers={"Authorization": f"Bearer {token}"}, timeout=10)
-            if resp.status_code == 200:
-                self.status_msg = f"Lawan {opp} tersimpan"
-                self.ids.opponent_input.text = ""
-            else:
-                self.status_msg = f"Error: {resp.status_code} {resp.text}"
-        except Exception as e:
-            self.status_msg = f"Network error: {e}"
-
-    def mark_eliminated(self):
-        elim = self.ids.elim_input.text.strip()
-        if not elim:
-            self.status_msg = "Isi nama yang dieliminasi"
-            return
-        token = store.get("user")["token"]
-        try:
-            resp = requests.post(f"{API_BASE}/match/eliminate", json={"match_id": self.match_id, "eliminated": elim}, headers={"Authorization": f"Bearer {token}"}, timeout=10)
-            if resp.status_code == 200:
-                self.status_msg = f"{elim} ditandai tereliminasi"
-                self.ids.elim_input.text = ""
-            else:
-                self.status_msg = f"Error: {resp.status_code} {resp.text}"
-        except Exception as e:
-            self.status_msg = f"Network error: {e}"
-
-    def next_round(self):
-        if self.current_round < len(self.rounds) - 1:
-            self.current_round += 1
-            self.ids.round_label.text = f"📍 Babak: {self.rounds[self.current_round]}"
-        else:
-            self.status_msg = "Sudah di fase terakhir"
-
-    def finish_match(self):
-        token = store.get("user")["token"]
-        try:
-            resp = requests.post(f"{API_BASE}/match/finish", params={"match_id": self.match_id}, headers={"Authorization": f"Bearer {token}"}, timeout=10)
-            if resp.status_code == 200:
-                self.status_msg = "Pertandingan selesai, data tersimpan"
-            else:
-                self.status_msg = f"Error: {resp.status_code} {resp.text}"
-        except Exception as e:
-            self.status_msg = f"Network error: {e}"
-
-
-class AdminScreen(BaseScreen):
-    users = ListProperty([])
-
-    def on_pre_enter(self):
-        if not store.exists("user"):
-            self.status_msg = "Perlu login admin"
-            return
-        token = store.get("user")["token"]
-        try:
-            resp = requests.get(f"{API_BASE}/admin/users", headers={"Authorization": f"Bearer {token}"}, timeout=10)
-            if resp.status_code == 200:
-                self.users = resp.json()
-            else:
-                self.status_msg = f"Error: {resp.status_code} {resp.text}"
-        except Exception as e:
-            self.status_msg = f"Network error: {e}"
-
-    def approve(self, username):
-        token = store.get("user")["token"]
-        try:
-            resp = requests.post(f"{API_BASE}/admin/approve/{username}", headers={"Authorization": f"Bearer {token}"}, timeout=10)
-            if resp.status_code == 200:
-                self.status_msg = f"{username} diaktifkan"
-                self.on_pre_enter()
-            else:
-                self.status_msg = f"Error: {resp.status_code} {resp.text}"
-        except Exception as e:
-            self.status_msg = f"Network error: {e}"
-
-
-class Root(SceenManager):  # fix: class name typo if needed
+class RootManager(ScreenManager):
     pass
 
 
-class MCGGApp(App):
+class McggApp(App):
     def build(self):
-        Builder.load_string(KV)
-        sm = ScreenManager()
-        sm.add_widget(LoginScreen(name="login"))
-        sm.add_widget(RegisterScreen(name="register"))
-        sm.add_widget(DashboardScreen(name="dashboard"))
-        sm.add_widget(PredictScreen(name="predict"))
-        sm.add_widget(MatchScreen(name="match"))
-        sm.add_widget(AdminScreen(name="admin"))
-        sm.current = "login" if not store.exists("user") else "dashboard"
-        return sm
+        return Builder.load_string(KV)
 
 
 if __name__ == "__main__":
-    MCGGApp().run()
+    McggApp().run()
