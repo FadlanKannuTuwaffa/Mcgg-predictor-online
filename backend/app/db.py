@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("postgresql://postgres:[fadlankannutuwaffa]@db.yomyntfbcoomgijcspfk.supabase.co:5432/postgres")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL is not set. Please configure it in Render environment variables.")
