@@ -3,5 +3,6 @@ uvicorn
 supabase
 psycopg2-binary
 sqlalchemy
+sqlmodel
 python-dotenv
 pydantic
