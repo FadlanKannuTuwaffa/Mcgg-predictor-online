@@ -1,19 +1,24 @@
 # backend/app/db.py
-from sqlmodel import SQLModel, create_engine, Session
 import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+from dotenv import load_dotenv
 
-# Tentukan path DB yang aman
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-db_path = os.path.join(BASE_DIR, "mcgg.db")
+load_dotenv()
 
-# Utamakan DATABASE_URL dari environment, fallback ke SQLite lokal
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{db_path}")
+DATABASE_URL = os.getenv("postgresql://postgres:[fadlankannutuwaffa]@db.yomyntfbcoomgijcspfk.supabase.co:5432/postgres")
 
-engine = create_engine(DATABASE_URL, echo=False)
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL is not set. Please configure it in Render environment variables.")
 
-def init_db():
-    SQLModel.metadata.create_all(engine)
+# SQLAlchemy setup
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
-def get_session():
-    with Session(engine) as s:
-        yield s
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
