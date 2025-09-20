@@ -1,6 +1,6 @@
 # backend/app/auth.py
 import os
-from fastapi import Depends, HTTPException, Header
+from fastapi import HTTPException, Header
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
@@ -14,7 +14,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 async def get_current_user(authorization: str = Header(...)):
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid auth header")
-
     token = authorization.split(" ")[1]
     try:
         user = supabase.auth.get_user(token)
