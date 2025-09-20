@@ -24,204 +24,90 @@
         orientation: "vertical"
         padding: dp(20)
         spacing: dp(10)
+
         TitleLabel:
-            text: "MCGG Xbot"
-            size_hint_y: None
-            height: dp(40)
+            text: "Login"
+
         CustomInput:
             id: username
             hint_text: "Username"
+
         CustomInput:
             id: password
             hint_text: "Password"
             password: True
-        Label:
-            text: root.status_msg
-            size_hint_y: None
-            height: self.texture_size[1]+10
-        BoxLayout:
-            size_hint_y: None
-            height: dp(48)
-            spacing: dp(10)
-            CustomButton:
-                text: "Login"
-                on_release: root.on_login()
-            CustomButton:
-                text: "Register"
-                on_release: app.root.current = "register"
 
-<RegisterScreen>:
+        CustomButton:
+            text: "Login"
+            on_release: app.login(username.text, password.text)
+
+        Widget:
+
+<HomeScreen>:
     BoxLayout:
         orientation: "vertical"
         padding: dp(20)
         spacing: dp(10)
-        TitleLabel:
-            text: "Register"
-        CustomInput:
-            id: r_username
-            hint_text: "Username"
-        CustomInput:
-            id: r_password
-            hint_text: "Password"
-            password: True
-        Label:
-            text: root.status_msg
-            size_hint_y: None
-            height: self.texture_size[1]+10
-        CustomButton:
-            text: "Daftar"
-            on_release: root.on_register()
-        CustomButton:
-            text: "Kembali"
-            on_release: app.root.current = "login"
 
-<DashboardScreen>:
-    BoxLayout:
-        orientation: "vertical"
-        padding: dp(16)
-        spacing: dp(10)
-        Label:
-            text: "Halo, " + root.username
-            size_hint_y: None
-            height: dp(30)
+        TitleLabel:
+            text: "Home"
+
         CustomButton:
-            text: "Mulai Prediksi"
-            on_release: app.root.current = "predict"
-        CustomButton:
-            text: "Admin Panel"
-            on_release: app.root.current = "admin"
-            disabled: not root.is_admin
+            text: "Predict"
+            on_release: root.manager.current = "predict"
+
         CustomButton:
             text: "Logout"
-            on_release: root.logout()
+            on_release: app.logout()
+
         Label:
-            text: root.status_msg
-            size_hint_y: None
-            height: self.texture_size[1]+10
+            id: time_label
+            text: "00:00:00"
 
 <PredictScreen>:
     BoxLayout:
         orientation: "vertical"
-        padding: dp(12)
-        spacing: dp(8)
-        ScrollView:
-            do_scroll_x: False
-            BoxLayout:
-                orientation: "vertical"
-                size_hint_y: None
-                height: self.minimum_height
-                TitleLabel:
-                    text: "Input 8 Player (Player 1 = akun)"
-                GridLayout:
-                    cols: 2
-                    size_hint_y: None
-                    height: dp(8*48)
-                    row_default_height: dp(48)
-                    spacing: dp(6)
-                    Label: text: "Player 1 (you)"
-                    CustomInput:
-                        id: p1
-                        text: ""
-                        disabled: True
-                    Label: text: "Player 2"
-                    CustomInput:
-                        id: p2
-                    Label: text: "Player 3"
-                    CustomInput:
-                        id: p3
-                    Label: text: "Player 4"
-                    CustomInput:
-                        id: p4
-                    Label: text: "Player 5"
-                    CustomInput:
-                        id: p5
-                    Label: text: "Player 6"
-                    CustomInput:
-                        id: p6
-                    Label: text: "Player 7"
-                    CustomInput:
-                        id: p7
-                    Label: text: "Player 8"
-                    CustomInput:
-                        id: p8
-                CustomButton:
-                    text: "Mulai Prediksi"
-                    on_release: root.start_predict()
-                Label:
-                    id: pred_text
-                    text: ""
-                    size_hint_y: None
-                    height: self.texture_size[1]+10
-                Label:
-                    text: root.status_msg
-                    size_hint_y: None
-                    height: self.texture_size[1]+10
+        padding: dp(20)
+        spacing: dp(10)
 
-<MatchScreen>:
+        TitleLabel:
+            text: "Prediction"
+
+        CustomInput:
+            id: input_data
+            hint_text: "Enter input data"
+
+        CustomButton:
+            text: "Predict"
+            on_release: app.make_prediction(input_data.text)
+
+        CustomButton:
+            text: "Back"
+            on_release: root.manager.current = "home"
+
+<ResultScreen>:
     BoxLayout:
         orientation: "vertical"
-        padding: dp(12)
-        spacing: dp(8)
-        TitleLabel:
-            text: "Match Tracker"
-            size_hint_y: None
-            height: dp(36)
-        Label:
-            id: round_label
-            text: "Babak: I-II"
-            size_hint_y: None
-            height: dp(28)
-        CustomInput:
-            id: opponent_input
-            hint_text: "Nama lawan (saat babak ini)"
-        CustomButton:
-            text: "Simpan Lawan"
-            on_release: root.save_round()
-        CustomInput:
-            id: elim_input
-            hint_text: "Nama pemain dieliminasi"
-        CustomButton:
-            text: "Tandai Eliminasi"
-            on_release: root.mark_eliminated()
-        BoxLayout:
-            size_hint_y: None
-            height: dp(48)
-            spacing: dp(10)
-            CustomButton:
-                text: "Lanjut Babak"
-                on_release: root.next_round()
-            CustomButton:
-                text: "Selesai Pertandingan"
-                on_release: root.finish_match()
-        Label:
-            text: root.status_msg
-            size_hint_y: None
-            height: self.texture_size[1]+10
+        padding: dp(20)
+        spacing: dp(10)
 
-<AdminScreen>:
-    BoxLayout:
-        orientation: "vertical"
-        padding: dp(12)
-        spacing: dp(8)
         TitleLabel:
-            text: "Admin Panel"
-        ScrollView:
-            do_scroll_x: False
-            BoxLayout:
-                orientation: "vertical"
-                size_hint_y: None
-                height: self.minimum_height
-                RecycleBoxLayout:
-                    default_size: None, dp(48)
-                    default_size_hint: 1, None
-                    size_hint_y: None
-                    height: self.minimum_height
-                    orientation: "vertical"
-                    id: user_list
-        CustomButton:
-            text: "Refresh"
-            on_release: root.on_pre_enter()
+            text: "Result"
+
         Label:
-            text: root.status_msg
-            size_hint_y: None
-            height: self.texture_size[1]+10
+            id: result_label
+            text: "Result will appear here"
+
+        CustomButton:
+            text: "Back to Home"
+            on_release: root.manager.current = "home"
+
+<RootWidget>:
+    LoginScreen:
+        name: "login"
+    HomeScreen:
+        name: "home"
+    PredictScreen:
+        name: "predict"
+    ResultScreen:
+        name: "result"
